@@ -3,15 +3,18 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
+    "astro": "astro",
     "build": "astro check && astro build",
+    "dev": "astro dev",
     "preview": "astro preview",
-    "astro": "astro"
+    "start": "astro dev",
+    "sso": "aws sso login --sso-session=FastMediaEditor"
   },
   "dependencies": {
-    "astro": "^4.15.10",
     "@astrojs/check": "^0.9.3",
+    "astro": "^4.15.10",
+    "astro-sst": "2.43.5",
+    "sst": "3.1.51",
     "typescript": "^5.6.2"
   }
 }
