@@ -1,0 +1,20 @@
+---
+import Layout from "../layouts/Layout.astro";
+import ReactTunnels from "../components/Tunnels.tsx";
+---
+
+<Layout title="The Tunnel">
+    <h3>Upload a video to transcode to mp4 (x264) and play!</h3>
+    <hr />
+    <ol>
+        <li>give ability to load video</li>
+        <li>give ability to go frame by frame and match at release</li>
+        <li>pull out which frame release is at</li>
+        <li>inject that into ffmpeg</li>
+        <li>adjust ffmpeg to take in two videos and create overlay</li>
+        <li></li>
+        <li>get ffmpeg on load</li>
+    </ol>
+    <hr /> 
+    <ReactTunnels client:only="react"/>
+</Layout>
