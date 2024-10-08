@@ -41,6 +41,9 @@ function App() {
 
   const [videoFile, setVideoFile] = useState<File | undefined>()
   const [video2File, setVideo2File] = useState<File | undefined>()
+  const [overlayInProgress, setOverlayInProgress] = useState<boolean>(false)
+  const [error, setError] = useState<string | undefined>()
+
   const currentTimes = useRef<number[]>([])
   const ffmpegRef = useRef(new FFmpeg());
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -53,82 +56,115 @@ function App() {
     setVideo2File(e.target.files?.[0])
   }
   const transcode = async () => {
-    const ffmpeg = ffmpegRef.current;
-    await ffmpeg.writeFile("input", await fetchFile(videoFile));
-    await ffmpeg.writeFile("input2", await fetchFile(video2File));
-    console.log(currentTimes.current)
-    await ffmpeg.exec([
-      "-ss", `${currentTimes.current?.[0]}`,
-      "-i", "input",
-      "-t", "1",
-      "-c:v", "libvpx",
-      "-an",
-      "-crf", "10",
-      "-threads", "0",
-      "output1.webm",
-    ]);
-    console.log("video1 conversion complete")
-    await ffmpeg.exec([
-      "-ss", `${currentTimes.current?.[1]}`,
-      "-i", "input2",
-      "-t", "1",
-      "-c:v", "libvpx",
-      "-an",
-      "-crf", "10",
-      "-threads", "0",
-      "output2.webm",
-    ]);
-    console.log("video2 conversion complete")
-    await ffmpeg.exec([
-      '-i',
-      'output1.webm',
-      '-i',
-      'output2.webm',
-      '-filter_complex',
-      '[0:v][1:v]blend=all_expr=\'A*0.5 + B*0.5\'',
-      'output.mp4',
-    ]);
-    console.log("video creation complete")
-    const fileData = await ffmpeg.readFile('output.mp4');
-    const data = new Uint8Array(fileData as unknown as ArrayBuffer);
-    if (videoRef.current) {
-      videoRef.current.src = URL.createObjectURL(
-        new Blob([data.buffer], { type: 'video/mp4' })
-      )
+    try {
+      const ffmpeg = ffmpegRef.current;
+      await ffmpeg.writeFile("input", await fetchFile(videoFile));
+      await ffmpeg.writeFile("input2", await fetchFile(video2File));
+      console.log(currentTimes.current)
+      await ffmpeg.exec([
+        "-ss", `${currentTimes.current?.[0]}`,
+        "-i", "input",
+        "-t", "2",
+        "-c:v", "libvpx",
+        "-an",
+        "-crf", "5",
+        "-threads", "0",
+        "output1.webm",
+      ]);
+      console.log("video1 conversion complete")
+      await ffmpeg.exec([
+        "-ss", `${currentTimes.current?.[1]}`,
+        "-i", "input2",
+        "-t", "2",
+        "-c:v", "libvpx",
+        "-an",
+        "-crf", "5",
+        "-threads", "0",
+        "output2.webm",
+      ]);
+      console.log("video2 conversion complete")
+      await ffmpeg.exec([
+        '-i',
+        'output1.webm',
+        '-i',
+        'output2.webm',
+        '-an',
+        '-filter_complex',
+        // '[0:v][1:v]blend=all_expr=\'A*0.5 + B*0.5\'',
+        "[0:v][1:v]blend=all_expr='if(gt(A,175), A, B)'",
+        'output.mp4',
+      ]);
+      console.log("video creation complete")
+      const fileData = await ffmpeg.readFile('output.mp4');
+      const data = new Uint8Array(fileData as unknown as ArrayBuffer);
+      if (videoRef.current) {
+        videoRef.current.src = URL.createObjectURL(
+          new Blob([data.buffer], { type: 'video/mp4' })
+        )
+      }
+    } catch (e: any) {
+      setError(e)
     }
+    setOverlayInProgress(false)
   };
 
   const handleButtonClick = () => {
-    const video1 = document.getElementById("video1") as HTMLVideoElement;
-    const video2 = document.getElementById("video2") as HTMLVideoElement;
+    if (!!videoFile && !!video2File) {
+      setOverlayInProgress(true)
+      const video1 = document.getElementById("video1") as HTMLVideoElement;
+      const video2 = document.getElementById("video2") as HTMLVideoElement;
 
-    // play and pause video so currentTime is avaliable
-    video1.play()
-    video1.pause()
-    video2.play()
-    video2.pause()
+      // play and pause video so currentTime is avaliable
+      video1.play()
+      video1.pause()
+      video2.play()
+      video2.pause()
 
-    currentTimes.current = [video1?.currentTime, video2?.currentTime]
-    console.log({video: video1})
-    transcode()
+      currentTimes.current = [video1?.currentTime, video2?.currentTime]
+      transcode()
+    }
   }
 
   return loaded ? (
-    <>
-      {!!videoFile && <video src={URL.createObjectURL(videoFile)} id="video1" controls></video>}
-      {!!video2File && <video src={URL.createObjectURL(video2File)} id="video2" controls></video>}
-      <video ref={videoRef} controls></video>
+    <div className='bg-green-800 py-8 flex flex-col gap-8'>
+      <div className='flex flex-col md:flex-row justify-center gap-8'>
+        {/* todo:
+        1) add the ability to move by one frame at a time
+        2) add error
+        3) add progress indicator */}
+        <div className=' w-full md:w-5/12'>
+          <label className="text-white text-3xl text-center w-full block">Video 1</label>
+          <video
+            className='w-full'
+            src={!!videoFile ? URL.createObjectURL(videoFile) : ''}
+            poster={!videoFile ? 'VIDEO.png' : ''}
+            id="video1"
+            controls></video>
+          <input type="file" accept="video/*" name="video" onChange={handleFileUpload} />
+        </div>
+        <div className='w-full md:w-5/12'>
+          <label className="text-white text-3xl text-center w-full block">Video 2</label>
+          <video className='w-full'
+            src={!!video2File ? URL.createObjectURL(video2File) : ''}
+            poster={!video2File ? 'VIDEO.png' : ''}
+            id="video2"
+            controls></video>
+          <input type="file" accept="video/*" name="video" onChange={handleFile2Upload} />
+        </div>
+      </div>
+      <div className="flex flex-row justify-center ">
+        <button className="bg-amber-50 disabled:bg-gray-300 rounded p-4 font-bold text-xl" onClick={handleButtonClick} disabled={overlayInProgress}>Create Pitching Overlay Video</button>
+      </div>
+      <div className="flex flex-row justify-center">
+        <video className='w-full md:w-8/12' ref={videoRef} controls></video>
+      </div>
       <br />
-      <form>
-        <input type="file" accept="video/*" name="video" onChange={handleFileUpload} />
-        <input type="file" accept="video/*" name="video" onChange={handleFile2Upload} />
-      </form>
-      <button onClick={handleButtonClick}>Transcode avi to mp4</button>
       <p ref={messageRef}></p>
-    </>
+      <div>Error: {error}</div>
+    </div>
   ) : (
     // change to <Suspense> 
-    <h3> Loading ... </h3>
+    <h3> Please Wait... Content Is Loading... </h3>
   );
 }
 

@@ -3,8 +3,29 @@ import Layout from "../layouts/Layout.astro";
 import ReactTunnels from "../components/Tunnels.tsx";
 ---
 
-<Layout title="The Tunnel">
-    <h3>Lets see all the tunnels!</h3>
-    <hr /> 
-    <ReactTunnels client:only="react"/>
+<Layout title="Simple Pitching Overlays">
+    <div class="bg-green-800">
+        <h1 class="text-center text-amber-50 text-6xl font-bold py-6">
+            Create Simple Pitching Overlays
+        </h1>
+    </div>
+    <div class="relative">
+        <img
+            src="baseball_game.jpg"
+            alt="Descriptive Alt Text"
+            class="object-cover min-h-52 md:min-h-96"
+        />
+
+        <video
+            class="md:absolute md:top-1/2 md:left-1/2 md:transform md:-translate-x-1/2 md:-translate-y-1/2"
+            controls
+            src="your_video.mp4"
+            width="640"
+            height="360"
+        >
+            Your browser does not support the video tag.
+        </video>
+    </div>
+<hr />
+<ReactTunnels client:only="react" />
 </Layout>
